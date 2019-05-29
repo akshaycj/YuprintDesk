@@ -109,9 +109,13 @@ export default class Done extends Component {
             }
         }, {
             title: 'Status',
-            dataIndex: 'status',
             key: 'status',
             width: '400',
+            render: (record) => {
+                return (
+                    <Button className="button-done" disabled>Done</Button>
+                )
+            }
         }];
 
         return (
@@ -119,6 +123,7 @@ export default class Done extends Component {
                 <Table
                     dataSource={this.state.data}
                     pagination={false}
+                    rowClassName="data-row"
                     expandedRowRender={record => (
                         <div>{record.urls ? record.urls.map(this.expandedRowRender, this) : <Empty />}</div>
                     )}

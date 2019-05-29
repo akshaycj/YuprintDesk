@@ -41,12 +41,13 @@ export default class Active extends Component {
   getActiveData = () => {
     Auth.onAuthStateChanged((user) => {
       if (user) {
-        const list = [];
+
         var that = this;
         db.ref('store')
           .child('orders')
           .child('active')
           .on("value", (data) => {
+            const list = [];
             data.forEach((child) => {
               var item = {
                 user: child.val().user,
@@ -61,8 +62,9 @@ export default class Active extends Component {
               }
 
               list.push(item);
-              that.setState({ data: list })
+
             })
+            that.setState({ data: list })
           })
       } else {
         this.props.history.push("/");
@@ -197,10 +199,10 @@ export default class Active extends Component {
         return (
           record.status === "active" ?
             <Popconfirm placement="left" title={acceptText} onConfirm={this.confirmAccept.bind(this, record)} okText="Yes" cancelText="No">
-              <Button>Accept Order</Button>
+              <Button className="button-accept">Accept Order</Button>
             </Popconfirm> :
             <Popconfirm placement="left" title={doneText} onConfirm={this.confirmDone.bind(this, record)} okText="Yes" cancelText="No">
-              <Button>Done</Button>
+              <Button className="button-done">Done</Button>
             </Popconfirm>
         )
       }
@@ -211,6 +213,7 @@ export default class Active extends Component {
         <Table
           dataSource={this.state.data}
           pagination={false}
+          rowClassName="data-row"
           expandedRowRender={record => (
             <div>{record.urls ? record.urls.map(this.expandedRowRender, this) : <Empty />}</div>
           )}
