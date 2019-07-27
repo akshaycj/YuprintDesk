@@ -8,18 +8,18 @@ import { auth } from "firebase";
 
    
    
- const Done = (props) =>{
-    const new_colums = JSON.parse(JSON.stringify(props.columns)) //deep copy dont touch
-    new_colums.push({
+ const Processing = (props) =>{
+    const new_columns = JSON.parse(JSON.stringify(props.columns)) //deep copy dont touch
+    new_columns.push({
       title: 'Action',
       dataIndex: '',
       key: 'x',
-      render: () => <Button style={{color:'red'}} disabled>Completed</Button>,
+      render: (record) => <Button style={{color:'yellow'}} onClick={()=>{props.onClickDoneButton(record)}}>Done</Button>,
     })    
         return (
             <div className="homeMainDiv">
                 <Table
-                    dataSource={props.done_table_data}
+                    dataSource={props.processing_table_data}
                     pagination={false}
                     rowClassName="data-row"
                     expandedRowRender={record => {
@@ -27,10 +27,10 @@ import { auth } from "firebase";
                         return(
                         <div>{record.urls ? record.urls.map(props.expandedRowRender) : <Empty />}</div>
                      )}}
-                    columns={props.columns}
+                    columns={new_columns}
                 />
             </div>
         );
     }
 
-export default Done;
+export default Processing
