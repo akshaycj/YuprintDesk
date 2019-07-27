@@ -4,13 +4,7 @@ import Active from '../Active'
 import { db, Auth } from '../../config'
 import Done from '../Done'
 import Processing from '../Processing'
-import {
-  Tabs,
-  Icon,
-  Modal,
-  Input,
-  message,
-} from 'antd'
+import { Tabs, Icon, Modal, Input, message } from 'antd'
 const TabPane = Tabs.TabPane
 
 export default class Home extends React.Component {
@@ -24,49 +18,53 @@ export default class Home extends React.Component {
       show_modal: false,
       modal_data: {},
       total_number_of_pages: '',
-      estimate_pages_for_time:0,
+      estimate_pages_for_time: 0
     }
   }
   componentDidMount () {
     var that = this
-    db.ref('store/orders').on('value', function (data) {
-      const active_table_data = []
-      const processing_table_data = []
-      const done_table_data = []
-      var estimate_pages_for_time = 0;
-      console.log(data)
-      if (data.val()) {
-        if (data.val().active) {
-          Object.keys(data.val().active).map(iter => {
-
-            var item = { ...data.val().active[iter], ...{ key: iter } }
-            active_table_data.push(item)
+    Auth.onAuthStateChanged(user => {
+      if (user) {
+        db.ref('store/orders').on('value', function (data) {
+          const active_table_data = []
+          const processing_table_data = []
+          const done_table_data = []
+          var estimate_pages_for_time = 0
+          console.log(data)
+          if (data.val()) {
+            if (data.val().active) {
+              Object.keys(data.val().active).map(iter => {
+                var item = { ...data.val().active[iter], ...{ key: iter } }
+                active_table_data.push(item)
+              })
+            }
+            if (data.val().processing) {
+              Object.keys(data.val().processing).map(iter => {
+                estimate_pages_for_time =
+                  estimate_pages_for_time +
+                  Number(data.val().processing[iter].pages)
+                var item = { ...data.val().processing[iter], ...{ key: iter } }
+                processing_table_data.push(item)
+              })
+            }
+            if (data.val().done) {
+              Object.keys(data.val().done).forEach(iter => {
+                var item = { ...data.val().done[iter], ...{ key: iter } }
+                done_table_data.push(item)
+              })
+            }
+          }
+          that.setState({
+            active_table_data,
+            processing_table_data,
+            done_table_data,
+            estimate_pages_for_time
           })
-        }
-        if (data.val().processing) {
-          Object.keys(data.val().processing).map(iter => {
-            estimate_pages_for_time = estimate_pages_for_time + Number(data.val().processing[iter].pages)
-            var item = { ...data.val().processing[iter], ...{ key: iter } }
-            processing_table_data.push(item)
-          })
-        }
-        if (data.val().done) {
-          Object.keys(data.val().done).forEach(iter => {
-            var item = { ...data.val().done[iter], ...{ key: iter } }
-            done_table_data.push(item)
-          })
-        }
+        })
+      } else {
+        that.props.history.push('/')
       }
-      that.setState({
-        active_table_data,
-        processing_table_data,
-        done_table_data,
-        estimate_pages_for_time
-      })
-    console.log(that.state.estimate_pages_for_time);
-
     })
-    
   }
   getUsername = user_id => {
     db.ref('users')
