@@ -11,6 +11,13 @@ import { auth } from "firebase";
  const Processing = (props) =>{
     const new_columns = JSON.parse(JSON.stringify(props.columns)) //deep copy dont touch
     new_columns.push({
+        title: 'ETA',
+      dataIndex: '',
+      key: 'y',
+      render:(record)=>{console.log(record.pages);
+        var Eta = Math.round((((props.estimate_pages_for_time-Number(record.pages))*0.5)/(60))*100)/100
+          return(<div>{Eta}</div>)}
+    },{
       title: 'Action',
       dataIndex: '',
       key: 'x',

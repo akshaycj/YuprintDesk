@@ -4,7 +4,13 @@ import Active from '../Active'
 import { db, Auth } from '../../config'
 import Done from '../Done'
 import Processing from '../Processing'
-import { Tabs, Badge, Icon, Menu, Dropdown, Modal, Input, message, Alert } from 'antd'
+import {
+  Tabs,
+  Icon,
+  Modal,
+  Input,
+  message,
+} from 'antd'
 const TabPane = Tabs.TabPane
 
 export default class Home extends React.Component {
@@ -15,9 +21,10 @@ export default class Home extends React.Component {
       processing_table_data: [],
       done_table_data: [],
       selected_id: '',
-      show_modal:false,
-      modal_data:{},
-      total_number_of_pages:''
+      show_modal: false,
+      modal_data: {},
+      total_number_of_pages: '',
+      estimate_pages_for_time:0,
     }
   }
   componentDidMount () {
@@ -26,35 +33,41 @@ export default class Home extends React.Component {
       const active_table_data = []
       const processing_table_data = []
       const done_table_data = []
-        console.log(data);
-        if(data.val()){
+      var estimate_pages_for_time = 0;
+      console.log(data)
+      if (data.val()) {
+        if (data.val().active) {
+          Object.keys(data.val().active).map(iter => {
 
-            if (data.val().active) {
-                Object.keys(data.val().active).map(iter => {
-                    var item = { ...data.val().active[iter], ...{ key: iter } }
-                    active_table_data.push(item)
-                })
-            }
-      if (data.val().processing) {
+            var item = { ...data.val().active[iter], ...{ key: iter } }
+            active_table_data.push(item)
+          })
+        }
+        if (data.val().processing) {
           Object.keys(data.val().processing).map(iter => {
-              var item = { ...data.val().processing[iter], ...{ key: iter } }
-          processing_table_data.push(item)
-        })
-    }
-    if (data.val().done) {
-        Object.keys(data.val().done).forEach(iter => {
+            estimate_pages_for_time = estimate_pages_for_time + Number(data.val().processing[iter].pages)
+            var item = { ...data.val().processing[iter], ...{ key: iter } }
+            processing_table_data.push(item)
+          })
+        }
+        if (data.val().done) {
+          Object.keys(data.val().done).forEach(iter => {
             var item = { ...data.val().done[iter], ...{ key: iter } }
             done_table_data.push(item)
-        })
-    }
-}
+          })
+        }
+      }
       that.setState({
-          active_table_data,
-          processing_table_data,
-        done_table_data
+        active_table_data,
+        processing_table_data,
+        done_table_data,
+        estimate_pages_for_time
+      })
+    console.log(that.state.estimate_pages_for_time);
+
     })
-})
-}
+    
+  }
   getUsername = user_id => {
     db.ref('users')
       .child(user_id)
@@ -62,42 +75,50 @@ export default class Home extends React.Component {
         return data.val().displayName
       })
   }
-  onClickActiveButton = (record) =>{
-    this.setState({show_modal:true,modal_data:record})
+  onClickActiveButton = record => {
+    this.setState({ show_modal: true, modal_data: record })
   }
-  onClickDoneButton = (record) =>{
-    db.ref('store/orders').child(`done/${record.key}`).set({...record,...{status:'done'}}).then(err =>{
-        if(err)
-        console.log(err);
-        else{
-            db.ref('store/orders').child(`processing/${record.key}`).remove().then(
-                message.success('Process completed')
-            )
+  onClickDoneButton = record => {
+    db.ref('store/orders')
+      .child(`done/${record.key}`)
+      .set({ ...record, ...{ status: 'done' } })
+      .then(err => {
+        if (err) console.log(err)
+        else {
+          db.ref('store/orders')
+            .child(`processing/${record.key}`)
+            .remove()
+            .then(message.success('Process completed'))
         }
-    })
+      })
   }
-  onChangeInputInModal= (e) =>{
-    this.setState({total_number_of_pages:e.target.value})
+  onChangeInputInModal = e => {
+    this.setState({ total_number_of_pages: e.target.value })
   }
-  handleOk = ( ) =>{
-      var that = this
-      if(this.state.total_number_of_pages=== ''){
-          message.error("Enter Number of Pages")
-      }else{
-        db.ref('store/orders').child(`processing/${that.state.modal_data.key}`).set({...this.state.modal_data,...{pages:this.state.total_number_of_pages}}).then(function(err){
-            if(err)
-            console.log(err);
-            else{
-                db.ref('store/orders').child(`active/${that.state.modal_data.key}`).remove()
-                that.setState({show_modal:false,total_number_of_pages:''})
-            }
-            
+  handleOk = () => {
+    var that = this
+    if (this.state.total_number_of_pages === '') {
+      message.error('Enter Number of Pages')
+    } else {
+      db.ref('store/orders')
+        .child(`processing/${that.state.modal_data.key}`)
+        .set({
+          ...this.state.modal_data,
+          ...{ pages: this.state.total_number_of_pages }
         })
-      }
+        .then(function (err) {
+          if (err) console.log(err)
+          else {
+            db.ref('store/orders')
+              .child(`active/${that.state.modal_data.key}`)
+              .remove()
+            that.setState({ show_modal: false, total_number_of_pages: '' })
+          }
+        })
+    }
   }
-  handleCancel =() => {
-      
-      this.setState({show_modal:false,total_number_of_pages:''})
+  handleCancel = () => {
+    this.setState({ show_modal: false, total_number_of_pages: '' })
   }
   expandedRowRender = (data, i) => {
     return (
@@ -208,6 +229,7 @@ export default class Home extends React.Component {
             <Processing
               processing_table_data={this.state.processing_table_data}
               columns={columns}
+              estimate_pages_for_time={this.state.estimate_pages_for_time}
               expandedRowRender={this.expandedRowRender}
               onClickDoneButton={this.onClickDoneButton}
             />
@@ -221,15 +243,23 @@ export default class Home extends React.Component {
           </TabPane>
         </Tabs>
         <Modal
-          title="Basic Modal"
+          title='Basic Modal'
           visible={this.state.show_modal}
           onOk={this.handleOk}
           onCancel={this.handleCancel}
         >
-           {this.state.modal_data['urls'] ? this.state.modal_data['urls'].map((point,index) =>(
-               <a href={point} key={index}>{index}.<Icon type='file' style={{fontSize:'25px'}}/></a>
-           )):null}
-           <Input placeholder="Number of pages" onChange={this.onChangeInputInModal} type='number'/>
+          {this.state.modal_data['urls']
+            ? this.state.modal_data['urls'].map((point, index) => (
+              <a href={point} key={index}>
+                {index}.<Icon type='file' style={{ fontSize: '25px' }} />
+              </a>
+            ))
+            : null}
+          <Input
+            placeholder='Number of pages'
+            onChange={this.onChangeInputInModal}
+            type='number'
+          />
         </Modal>
       </div>
     )
